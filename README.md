@@ -59,3 +59,21 @@ npm install --no-save playwright
 npx http-server -p 8123 -s .    # in one terminal
 node tests/smoke.mjs            # in another
 ```
+
+## Hosted version
+
+`artifact/daily-hub.html` is the version published as a Claude Artifact for phone use:
+https://claude.ai/code/artifact/41cca498-a545-4eeb-99c6-e36ac14e7d10
+
+Same three pages, redesigned as a clinical "day sheet", with two differences that only
+work when it's hosted:
+
+- **Storage is server-side**, via the artifact `db` capability, so the same data opens
+  on your phone and your laptop. `localStorage` is kept as a cache so the page paints
+  instantly and still works if storage can't be reached — the footer says which is in use.
+- **Backups** go through the `downloads` capability, since hosted pages can't offer a
+  file through a plain link.
+
+It's a separate file from the static app in the repo root — edit whichever one you're
+actually using. To republish after an edit, publish `artifact/daily-hub.html` to the
+URL above.
