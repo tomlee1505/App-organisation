@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1729">
+<title>Daily Hub</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9989;</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <span class="brand-mark">✓</span>
+      <div>
+        <h1>Daily Hub</h1>
+        <p class="brand-sub" id="greeting">Let's get the day set up.</p>
+      </div>
+    </div>
+
+    <div class="datenav">
+      <button class="icon-btn" id="prevDay" title="Previous day" aria-label="Previous day">‹</button>
+      <button class="date-btn" id="dateLabel" title="Jump to today">Today</button>
+      <button class="icon-btn" id="nextDay" title="Next day" aria-label="Next day">›</button>
+    </div>
+  </div>
+
+  <div class="progress-strip" id="progressStrip"></div>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab is-active" data-page="placement"><span class="tab-ico">🏥</span> Placement</button>
+    <button class="tab" data-page="university"><span class="tab-ico">🎓</span> University</button>
+    <button class="tab" data-page="health"><span class="tab-ico">💪</span> Health</button>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- ============ PLACEMENT ============ -->
+  <section class="page is-active" id="page-placement">
+    <div class="page-head">
+      <h2>Placement</h2>
+      <p class="page-sub">Morning check-in, daily admin, and everything you're carrying.</p>
+    </div>
+
+    <div class="card" data-card="routine">
+      <div class="card-head">
+        <h3>Morning check-in</h3>
+        <div class="card-head-right">
+          <span class="pill" id="placementRoutineCount">0/0</span>
+          <button class="ghost-btn" data-action="add-routine" data-page="placement">+ Item</button>
+        </div>
+      </div>
+      <ul class="checklist" id="placementRoutine"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Tasks &amp; goals</h3>
+        <span class="pill" id="placementTaskCount">0 open</span>
+      </div>
+      <form class="add-row" data-add-task="placement">
+        <input type="text" name="text" placeholder="Add a task or goal…" autocomplete="off" required>
+        <input type="date" name="due" title="Optional due date" class="due-input">
+        <button type="submit" class="primary-btn">Add</button>
+      </form>
+      <ul class="tasklist" id="placementTasks"></ul>
+      <button class="link-btn" data-action="toggle-done" data-page="placement">Show completed</button>
+      <ul class="tasklist done-list" id="placementTasksDone" hidden></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Notes for today</h3></div>
+      <textarea class="daynote" id="placementNote" rows="4"
+        placeholder="Handover, who you're with, anything to remember…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ UNIVERSITY ============ -->
+  <section class="page" id="page-university">
+    <div class="page-head">
+      <h2>University</h2>
+      <p class="page-sub">Lectures, readings, notes and the study to-do list.</p>
+    </div>
+
+    <div class="card" data-card="routine">
+      <div class="card-head">
+        <h3>Daily study check-in</h3>
+        <div class="card-head-right">
+          <span class="pill" id="universityRoutineCount">0/0</span>
+          <button class="ghost-btn" data-action="add-routine" data-page="university">+ Item</button>
+        </div>
+      </div>
+      <ul class="checklist" id="universityRoutine"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Tasks &amp; deadlines</h3>
+        <span class="pill" id="universityTaskCount">0 open</span>
+      </div>
+      <form class="add-row" data-add-task="university">
+        <input type="text" name="text" placeholder="Reading, assignment, revision…" autocomplete="off" required>
+        <input type="date" name="due" title="Optional due date" class="due-input">
+        <button type="submit" class="primary-btn">Add</button>
+      </form>
+      <ul class="tasklist" id="universityTasks"></ul>
+      <button class="link-btn" data-action="toggle-done" data-page="university">Show completed</button>
+      <ul class="tasklist done-list" id="universityTasksDone" hidden></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Notes &amp; readings</h3>
+        <button class="ghost-btn" data-action="add-note">+ Note</button>
+      </div>
+      <div class="filters">
+        <input type="search" id="noteSearch" placeholder="Search notes…" autocomplete="off">
+        <div class="chips" id="noteChips">
+          <button class="chip is-active" data-kind="all">All</button>
+          <button class="chip" data-kind="lecture">Lectures</button>
+          <button class="chip" data-kind="reading">Readings</button>
+          <button class="chip" data-kind="note">Notes</button>
+        </div>
+      </div>
+      <div class="notes" id="notesList"></div>
+    </div>
+  </section>
+
+  <!-- ============ HEALTH ============ -->
+  <section class="page" id="page-health">
+    <div class="page-head">
+      <h2>Health</h2>
+      <p class="page-sub">Daily targets. Tap, tick, or type the number.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Today's targets</h3>
+        <div class="card-head-right">
+          <span class="pill" id="healthCount">0/0</span>
+          <button class="ghost-btn" data-action="add-metric">+ Target</button>
+        </div>
+      </div>
+      <div class="metrics" id="metricsList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Last 14 days</h3></div>
+      <div class="heatwrap" id="healthHistory"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Health goals</h3>
+        <span class="pill" id="healthTaskCount">0 open</span>
+      </div>
+      <form class="add-row" data-add-task="health">
+        <input type="text" name="text" placeholder="e.g. book physio, plan meals…" autocomplete="off" required>
+        <input type="date" name="due" title="Optional due date" class="due-input">
+        <button type="submit" class="primary-btn">Add</button>
+      </form>
+      <ul class="tasklist" id="healthTasks"></ul>
+      <button class="link-btn" data-action="toggle-done" data-page="health">Show completed</button>
+      <ul class="tasklist done-list" id="healthTasksDone" hidden></ul>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <button class="link-btn" data-action="export">Export data</button>
+  <button class="link-btn" data-action="import">Import data</button>
+  <button class="link-btn danger" data-action="reset-day">Clear this day</button>
+  <input type="file" id="importFile" accept="application/json" hidden>
+  <p class="footnote">Everything is saved on this device only. Nothing leaves your browser.</p>
+</footer>
+
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalTitle">Add</h3>
+    <form id="modalForm"></form>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
