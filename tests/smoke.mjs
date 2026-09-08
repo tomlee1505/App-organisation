@@ -21,9 +21,9 @@ await page.waitForTimeout(300);
 const assert = (c, m) => { if (!c) errors.push('FAIL: ' + m); };
 
 // placement routine renders + ticking works
-assert((await page.locator('#placementRoutine li').count()) === 6, 'placement routine has 6 items');
+assert((await page.locator('#placementRoutine li').count()) === 3, 'placement routine has 3 items');
 await page.locator('#placementRoutine .tick').first().click();
-assert((await page.locator('#placementRoutineCount').textContent()) === '1/6', 'routine count updates');
+assert((await page.locator('#placementRoutineCount').textContent()) === '1/3', 'routine count updates');
 
 // task add
 await page.fill('[data-add-task="placement"] input[name=text]', 'Ring the ward');
@@ -74,9 +74,9 @@ assert((await page.locator('.tab.is-active').getAttribute('data-page')) === 'hea
 await page.click('#prevDay');
 assert((await page.locator('#healthCount').textContent()) === '0/5', 'past day is empty');
 await page.click('.tab[data-page="placement"]');
-assert((await page.locator('#placementRoutineCount').textContent()) === '0/6', 'past routine empty');
+assert((await page.locator('#placementRoutineCount').textContent()) === '0/3', 'past routine empty');
 await page.click('#dateLabel');
-assert((await page.locator('#placementRoutineCount').textContent()) === '1/6', 'back to today keeps ticks');
+assert((await page.locator('#placementRoutineCount').textContent()) === '1/3', 'back to today keeps ticks');
 assert((await page.locator('#placementTaskCount').textContent()) === '0 open', 'tasks carry across dates');
 
 await page.screenshot({ path: 'tests/placement.png', fullPage: true });

@@ -1296,6 +1296,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
       db.doc('days/' + date).get().then(function (snap) {
         if (snap.exists && view === date) {
           state.days[date] = normalizeDay(snap.data());
+
           writeCache();
           render();
         }
@@ -1479,11 +1480,18 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
     if (view === shift(today(), -1)) goto(today());
   }, 60000);
 
-  /* ---------- db ---------- */
+  /* ---------- db ----------
+     Snapshot bodies from the store are frozen and shared between deliveries.
+     Everything below deep-copies before it enters app state — assigning a
+     frozen object into state makes the next tick or edit throw. */
+  function thaw(v) {
+    return (v === undefined || v === null) ? v : JSON.parse(JSON.stringify(v));
+  }
+
   function normalizeDay(d) {
     return {
-      checks: (d && d.checks) || {},
-      metrics: (d && d.metrics) || {},
+      checks: thaw(d && d.checks) || {},
+      metrics: thaw(d && d.metrics) || {},
       note: (d && typeof d.note === 'string') ? d.note : ''
     };
   }
@@ -1499,8 +1507,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 
       if (config.exists) {
         var c = config.data();
-        if (c.routines) state.routines = c.routines;
-        if (c.metrics) state.metrics = c.metrics;
+        if (c.routines) state.routines = thaw(c.routines);
+        if (c.metrics) state.metrics = thaw(c.metrics);
         state.rev = c.rev || 0;
         if (migrateContent(state)) save('config');
       } else {
@@ -1509,14 +1517,14 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
       }
 
       if (tasks.exists && Array.isArray(tasks.data().tasks)) {
-        state.tasks = tasks.data().tasks;
+        state.tasks = thaw(tasks.data().tasks);
       } else if (state.tasks.length) {
         save('tasks');
       }
 
       if (notes.size) {
         state.notes = notes.docs.map(function (d) {
-          var n = Object.assign({}, d.data());
+          var n = thaw(d.data()) || {};
           n.id = d.id;
           return n;
         });
@@ -1555,15 +1563,18 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
     if (!store) { setStatus('local', 'Saved on this device only'); return; }
     db = store;
     return loadFromDb();
-  }).catch(function () {
-    setStatus('local', 'Saved on this device — could not reach storage');
+  }).catch(function (err) {
+    console.error('Daily Hub — could not load saved data:', err);
+    setStatus('bad', 'Could not load saved data — showing this device’s copy');
   });
 
   /* pick up changes made on another device when the tab comes back */
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible' || !db) return;
     if (view !== today() && view === shift(today(), -1)) view = today();
-    loadFromDb().catch(function () { /* keep showing what we have */ });
+    loadFromDb().catch(function (err) {
+      console.error('Daily Hub — refresh failed:', err);
+    });
   });
 })();
 </script>

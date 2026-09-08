@@ -53,13 +53,22 @@ Note that browser storage is per-device, so use Export/Import to move data acros
 | `app.js` | State, storage, and all rendering |
 | `tests/smoke.mjs` | Browser smoke test covering all three pages |
 
-## Running the test
+## Running the tests
 
 ```bash
 npm install --no-save playwright
+
 npx http-server -p 8123 -s .    # in one terminal
-node tests/smoke.mjs            # in another
+node tests/smoke.mjs            # in another — the static app
+
+node tests/artifact-db.mjs      # the hosted page, no server needed
 ```
+
+`tests/artifact-db.mjs` drives `artifact/daily-hub.html` against a fake artifact
+store that deep-freezes snapshot bodies the way the real one does, and reloads
+between steps. Frozen snapshots are the trap here: dropping one into app state
+makes the next tick throw under strict mode, which looks like ticks silently
+reverting. Anything read out of the store must be copied first.
 
 ## Hosted version
 
