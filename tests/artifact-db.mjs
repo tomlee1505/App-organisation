@@ -140,9 +140,33 @@ assert((await med.locator('.tile-sub').textContent()).trim() === '', 'meditation
 assert((await page.locator('.tile').filter({ hasText: 'Gym' }).locator('.tile-sub').textContent()).trim() === '',
   'gym just says Gym');
 
+/* water and steps are counters with their own notch, migrated from the store */
+const water0 = page.locator('.tile').filter({ hasText: 'Water' });
+const steps0 = page.locator('.tile').filter({ hasText: 'Steps' });
+assert((await water0.locator('.tally').textContent()).trim() === '0 of 3.5 L',
+  'water counts litres: ' + (await water0.locator('.tally').textContent()));
+assert((await steps0.locator('.tally').textContent()).trim() === '0 of 8,000 steps',
+  'steps counts to 8,000: ' + (await steps0.locator('.tally').textContent()));
+assert(await steps0.locator('input[type=number]').count() === 0, 'steps is no longer a typed field');
+
+/* a full run of half-litre notches must land exactly on the target */
+for (let i = 0; i < 7; i++) await water0.locator('.step').last().click();
+assert((await water0.locator('.tally').textContent()).trim() === '3.5 of 3.5 L',
+  'seven half-litres reach 3.5 exactly: ' + (await water0.locator('.tally').textContent()));
+assert((await water0.getAttribute('class')).includes('is-met'), 'water target counts as met');
+await water0.locator('.step').first().click();
+assert((await water0.locator('.tally').textContent()).trim() === '3 of 3.5 L', 'minus steps back down');
+for (let i = 0; i < 8; i++) await water0.locator('.step').first().click();
+assert((await water0.locator('.tally').textContent()).trim() === '0 of 3.5 L', 'water stops at zero');
+
+await steps0.locator('.step').last().click();
+await steps0.locator('.step').last().click();
+assert((await steps0.locator('.tally').textContent()).trim() === '2,000 of 8,000 steps',
+  'steps move in thousands: ' + (await steps0.locator('.tally').textContent()));
+
 /* 2. the migration was written back to the store */
 const stored = JSON.parse(await page.evaluate(() => localStorage.getItem('__fakedb')));
-assert(stored['app/config'].rev === 2, 'store carries the new revision');
+assert(stored['app/config'].rev === 3, 'store carries the new revision, got ' + stored['app/config'].rev);
 assert(stored['app/config'].routines.placement.length === 3, 'store holds the new placement list');
 
 /* 3. THE REPORTED BUG: a tick must stick, on the page and across a reload */
@@ -176,7 +200,10 @@ await page.waitForTimeout(150);
 
 await load();
 await page.click('.tab[data-page="health"]');
-assert((await water.locator('.tile-val').textContent()).trim() === '3 / 8', 'water count persisted');
+assert((await water.locator('.tally').textContent()).trim() === '1.5 of 3.5 L',
+  'water litres persisted: ' + (await water.locator('.tally').textContent()));
+assert((await page.locator('.tile').filter({ hasText: 'Steps' }).locator('.tally').textContent()).trim()
+  === '2,000 of 8,000 steps', 'steps persisted');
 assert(await med.locator('.box').getAttribute('aria-checked') === 'true', 'meditation tick persisted');
 await page.click('.tab[data-page="placement"]');
 assert((await rows('#tasksPlacement .row-text'))[0] === 'Ring the ward', 'task persisted');

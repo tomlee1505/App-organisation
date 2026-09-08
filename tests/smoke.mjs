@@ -54,19 +54,25 @@ assert((await page.locator('#notesList .note').count()) === 1, 'search matches b
 // health metrics
 await page.click('.tab[data-page="health"]');
 assert((await page.locator('.metric').count()) === 5, '5 metrics');
-await page.locator('.metric .tick').first().click();               // gym
-for (let i = 0; i < 8; i++) await page.locator('.metric .step-btn:last-child').first().click(); // water
-assert((await page.locator('#healthCount').textContent()) === '2/5', 'gym + water met');
-const stepsInput = page.locator('.metric input[type=number]').first();
-await stepsInput.fill('10500');
-await stepsInput.blur();
-assert((await page.locator('#healthCount').textContent()) === '3/5', 'steps met');
+const metric = (name) => page.locator('.metric').filter({ hasText: name });
+await metric('Gym').locator('.tick').click();
+for (let i = 0; i < 7; i++) await metric('Water').locator('.step-btn').last().click();  // 7 x 0.5L
+assert((await metric('Water').locator('.metric-val').textContent()).trim() === '3.5 / 3.5',
+  'water reaches 3.5 exactly: ' + (await metric('Water').locator('.metric-val').textContent()));
+for (let i = 0; i < 8; i++) await metric('Steps').locator('.step-btn').last().click();  // 8 x 1000
+assert((await metric('Steps').locator('.metric-val').textContent()).trim() === '8,000 / 8,000',
+  'steps reach 8,000: ' + (await metric('Steps').locator('.metric-val').textContent()));
+assert((await page.locator('#healthCount').textContent()) === '3/5', 'gym, water and steps met');
+const sleepInput = metric('Sleep').locator('input[type=number]');
+await sleepInput.fill('8');
+await sleepInput.blur();
+assert((await page.locator('#healthCount').textContent()) === '4/5', 'sleep met');
 assert((await page.locator('.heat-day').count()) === 14, '14 day history');
 
 // persistence across reload
 await page.reload();
 await page.waitForTimeout(300);
-assert((await page.locator('#healthCount').textContent()) === '3/5', 'health persists');
+assert((await page.locator('#healthCount').textContent()) === '4/5', 'health persists');
 assert((await page.locator('#placementNote').inputValue()) === 'with Sarah today', 'note persists');
 assert((await page.locator('.tab.is-active').getAttribute('data-page')) === 'health', 'last tab remembered');
 

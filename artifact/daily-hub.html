@@ -282,6 +282,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
   font-family: var(--mono); font-size: 11px; color: var(--ink-3);
   display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1px;
 }
+.tile-sub .tally { color: var(--ink-2); font-weight: 500; }
 .tile-sub .streak { color: var(--warn); }
 
 .tile-ctrl { display: flex; align-items: center; gap: 5px; flex: none; }
@@ -622,13 +623,20 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
      The check-in lives in the store, so changing defaults() alone would only
      reach a brand-new device. Anything below the current revision is edited
      in place on load, keeping steps that were added by hand. */
-  var CONTENT_REV = 2;
+  var CONTENT_REV = 3;
 
   function plain(t) { return String(t || '').replace(/[’']/g, "'").trim().toLowerCase(); }
 
   function migrateContent(s) {
-    if ((s.rev || 0) >= CONTENT_REV) return false;
+    var from = s.rev || 0;
+    if (from >= CONTENT_REV) return false;
+    if (from < 2) revTwo(s);
+    if (from < 3) revThree(s);
+    s.rev = CONTENT_REV;
+    return true;
+  }
 
+  function revTwo(s) {
     var retired = {
       placement: ['check the activity list for today', "read yesterday's handover notes",
         'set my top 3 priorities', 'check in with supervisor'],
@@ -663,9 +671,17 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
         m.unit = '';
       }
     });
+  }
 
-    s.rev = CONTENT_REV;
-    return true;
+  /* water and steps become +/- counters with their own notch size */
+  function revThree(s) {
+    (s.metrics || []).forEach(function (m) {
+      if (plain(m.name) === 'water') {
+        m.kind = 'counter'; m.target = 3.5; m.step = 0.5; m.unit = 'L';
+      } else if (plain(m.name) === 'steps') {
+        m.kind = 'counter'; m.target = 8000; m.step = 1000; m.unit = 'steps';
+      }
+    });
   }
 
   /* ---------- defaults on first run ---------- */
@@ -685,8 +701,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
       },
       metrics: [
         { id: uid(), name: 'Gym', mark: '🏋', kind: 'check', target: 1, unit: '' },
-        { id: uid(), name: 'Steps', mark: '👟', kind: 'number', target: 10000, unit: 'steps' },
-        { id: uid(), name: 'Water', mark: '💧', kind: 'counter', target: 8, unit: 'glasses' },
+        { id: uid(), name: 'Steps', mark: '👟', kind: 'counter', target: 8000, step: 1000, unit: 'steps' },
+        { id: uid(), name: 'Water', mark: '💧', kind: 'counter', target: 3.5, step: 0.5, unit: 'L' },
         { id: uid(), name: 'Meditation', mark: '🧘', kind: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Sleep', mark: '☾', kind: 'number', target: 7, unit: 'hrs' }
       ],
@@ -814,6 +830,21 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
     var checks = peek(date).checks;
     return { done: items.filter(function (i) { return checks[i.id]; }).length, total: items.length };
   }
+  function notch(m) { return Number(m.step) > 0 ? Number(m.step) : 1; }
+
+  /* 0.5 notches land exactly in binary, but rounding keeps any custom
+     notch size (0.1, 0.25) from drifting after a run of taps */
+  function tally(m, v, dir) {
+    var next = (Number(v) || 0) + dir * notch(m);
+    return Math.max(0, Math.round(next * 1000) / 1000);
+  }
+
+  function fmtNum(n) {
+    var v = Number(n) || 0;
+    if (Math.abs(v) >= 1000) return v.toLocaleString();
+    return String(Math.round(v * 1000) / 1000);
+  }
+
   function met(m, v) {
     if (m.kind === 'check') return !!v;
     return (Number(v) || 0) >= Number(m.target || 0);
@@ -1065,8 +1096,12 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
       var body = el('div', 'tile-body');
       body.appendChild(el('div', 'tile-name', m.name));
       var sub = el('div', 'tile-sub');
-      if (m.kind !== 'check') {
-        sub.appendChild(el('span', null, 'target ' + m.target + (m.unit ? ' ' + m.unit : '')));
+      if (m.kind === 'counter') {
+        sub.appendChild(el('span', 'tally', fmtNum(v) + ' of ' + fmtNum(m.target) +
+          (m.unit ? ' ' + m.unit : '')));
+      } else if (m.kind !== 'check') {
+        sub.appendChild(el('span', null, 'target ' + fmtNum(m.target) +
+          (m.unit ? ' ' + m.unit : '')));
       }
       var s = streak(m);
       if (s > 1) sub.appendChild(el('span', 'streak', s + '-day streak'));
@@ -1090,27 +1125,27 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
         ctrl.appendChild(box);
 
       } else if (m.kind === 'counter') {
+        var stepLabel = fmtNum(notch(m)) + (m.unit ? ' ' + m.unit : '');
         var minus = el('button', 'step', '−');
         minus.type = 'button';
-        minus.setAttribute('aria-label', 'One less ' + m.name);
+        minus.setAttribute('aria-label', stepLabel + ' less ' + m.name);
         minus.onclick = function () {
           var live = day(view).metrics;
-          live[m.id] = Math.max(0, (Number(live[m.id]) || 0) - 1);
+          live[m.id] = tally(m, live[m.id], -1);
           save('day', view);
           renderHealth();
         };
         var plus = el('button', 'step', '+');
         plus.type = 'button';
         plus.dataset.metric = m.id;
-        plus.setAttribute('aria-label', 'One more ' + m.name);
+        plus.setAttribute('aria-label', stepLabel + ' more ' + m.name);
         plus.onclick = function () {
           var live = day(view).metrics;
-          live[m.id] = (Number(live[m.id]) || 0) + 1;
+          live[m.id] = tally(m, live[m.id], 1);
           save('day', view);
           renderHealth();
         };
         ctrl.appendChild(minus);
-        ctrl.appendChild(el('span', 'tile-val', (Number(v) || 0) + ' / ' + m.target));
         ctrl.appendChild(plus);
 
       } else {
@@ -1399,12 +1434,14 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
         { value: 'number', label: 'Type the number' }
       ] },
       { name: 'target', label: 'Daily target', type: 'number', value: '1' },
-      { name: 'unit', label: 'Unit', placeholder: 'min, km, glasses' }
+      { name: 'step', label: 'Notch size (for counting up)', type: 'number', value: '1' },
+      { name: 'unit', label: 'Unit', placeholder: 'min, km, L' }
     ], function (d) {
       if (!d.name) return;
       state.metrics.push({
         id: uid(), name: d.name, mark: d.mark || '★', kind: d.kind || 'check',
         target: d.kind === 'check' ? 1 : (Number(d.target) || 1),
+        step: Number(d.step) > 0 ? Number(d.step) : 1,
         unit: d.unit || ''
       });
       save('config');

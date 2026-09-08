@@ -17,7 +17,8 @@ deadlines, and a searchable notes library for lectures, readings and general not
 (filter by type, search by title, unit or body text).
 
 **💪 Health** — daily targets that reset each morning: gym (tick), steps (10,000),
-water (8 glasses, +/− buttons), meditation (tick), sleep (7 hrs). Each target keeps
+water (0.5 L notches up to 3.5 L), steps (1,000 notches up to 8,000), meditation
+(tick), sleep (7 hrs typed in). Each target keeps
 a streak, and the last 14 days show as a small heatmap. There's also a health goals
 list for one-off things like booking physio.
 

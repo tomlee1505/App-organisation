@@ -54,8 +54,8 @@
       },
       metrics: [
         { id: uid(), name: 'Gym', icon: '🏋️', type: 'check', target: 1, unit: '' },
-        { id: uid(), name: 'Steps', icon: '👟', type: 'number', target: 10000, unit: 'steps' },
-        { id: uid(), name: 'Water', icon: '💧', type: 'counter', target: 8, unit: 'glasses' },
+        { id: uid(), name: 'Steps', icon: '👟', type: 'counter', target: 8000, step: 1000, unit: 'steps' },
+        { id: uid(), name: 'Water', icon: '💧', type: 'counter', target: 3.5, step: 0.5, unit: 'L' },
         { id: uid(), name: 'Meditation', icon: '🧘', type: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Sleep', icon: '😴', type: 'number', target: 7, unit: 'hrs' }
       ],
@@ -149,6 +149,18 @@
     var checks = peek(view).checks;
     var done = items.filter(function (i) { return checks[i.id]; }).length;
     return { done: done, total: items.length };
+  }
+
+  function notch(m) { return Number(m.step) > 0 ? Number(m.step) : 1; }
+
+  function tally(m, value, dir) {
+    var next = (Number(value) || 0) + dir * notch(m);
+    return Math.max(0, Math.round(next * 1000) / 1000);
+  }
+
+  function fmtNum(n) {
+    var v = Number(n) || 0;
+    return Math.abs(v) >= 1000 ? v.toLocaleString() : String(Math.round(v * 1000) / 1000);
   }
 
   function metricMet(m, value) {
@@ -446,7 +458,7 @@
       var sub = el('div', 'metric-target');
       sub.textContent = m.type === 'check'
         ? ''
-        : 'Target ' + m.target + (m.unit ? ' ' + m.unit : '');
+        : 'Target ' + fmtNum(m.target) + (m.unit ? ' ' + m.unit : '');
       if (sub.textContent) body.appendChild(sub);
       if (s > 1) {
         var st = el('div', 'metric-streak', '🔥 ' + s + ' day streak');
@@ -475,16 +487,16 @@
         minus.setAttribute('aria-label', 'Decrease ' + m.name);
         minus.addEventListener('click', function () {
           var live = day(view).metrics;
-          live[m.id] = Math.max(0, (Number(live[m.id]) || 0) - 1);
+          live[m.id] = tally(m, live[m.id], -1);
           save(); renderMetrics(); renderProgress(); renderHistory();
         });
-        var val = el('div', 'metric-val', (Number(value) || 0) + ' / ' + m.target);
+        var val = el('div', 'metric-val', fmtNum(value) + ' / ' + fmtNum(m.target));
         var plus = el('button', 'step-btn', '+');
         plus.type = 'button';
         plus.setAttribute('aria-label', 'Increase ' + m.name);
         plus.addEventListener('click', function () {
           var live = day(view).metrics;
-          live[m.id] = (Number(live[m.id]) || 0) + 1;
+          live[m.id] = tally(m, live[m.id], 1);
           save(); renderMetrics(); renderProgress(); renderHistory();
         });
         ctrl.appendChild(minus);
@@ -751,13 +763,15 @@
           { value: 'number', label: 'Type a number' }
         ] },
         { name: 'target', label: 'Daily target', type: 'number', value: '1' },
-        { name: 'unit', label: 'Unit (optional)', placeholder: 'min, km, glasses' }
+        { name: 'step', label: 'Notch size (for counting up)', type: 'number', value: '1' },
+        { name: 'unit', label: 'Unit (optional)', placeholder: 'min, km, L' }
       ], function (data) {
         if (!data.name) return;
         state.metrics.push({
           id: uid(), name: data.name, icon: data.icon || '⭐',
           type: data.type || 'check',
           target: data.type === 'check' ? 1 : (Number(data.target) || 1),
+          step: Number(data.step) > 0 ? Number(data.step) : 1,
           unit: data.unit || ''
         });
         save();
