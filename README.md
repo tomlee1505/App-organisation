@@ -7,16 +7,17 @@ Everything is saved in that browser's `localStorage`, so nothing ever leaves the
 
 ## The three pages
 
-**🏥 Placement** — the morning check-in (check clinic emails, check the activity list,
-read handover, set top 3 priorities, check in with supervisor, log hours), a running
-task/goal list with optional due dates, and a free-text note for the day.
+**🏥 Placement** — the morning check-in (check clinic emails, submit logbook, check
+phone notes), a running task/goal list with optional due dates, and a free-text note
+for the day.
 
-**🎓 University** — a daily study check-in, tasks and deadlines, and a searchable
-notes library for lectures, readings and general notes (filter by type, search by
-title, unit or body text).
+**🎓 University** — the weekly check-in (finish weekly notes before Thursday class,
+update readings into a podcast, listen to the weekly podcast content), tasks and
+deadlines, and a searchable notes library for lectures, readings and general notes
+(filter by type, search by title, unit or body text).
 
 **💪 Health** — daily targets that reset each morning: gym (tick), steps (10,000),
-water (8 glasses, +/− buttons), meditation (10 min), sleep (7 hrs). Each target keeps
+water (8 glasses, +/− buttons), meditation (tick), sleep (7 hrs). Each target keeps
 a streak, and the last 14 days show as a small heatmap. There's also a health goals
 list for one-off things like booking physio.
 

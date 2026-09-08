@@ -263,10 +263,15 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
   padding: 11px 13px;
 }
 .tile-fill {
-  position: absolute; inset: 0 auto 0 0; width: 0;
+  position: absolute; top: 0; bottom: 0; left: 0; width: 0; z-index: 0;
   background: var(--accent-wash); transition: width .3s ease;
 }
-.tile > * { position: relative; }
+/* only the content sits above the fill — a bare `.tile > *` would also
+   catch .tile-fill and drop it back into the flex row */
+.tile > .tile-mark,
+.tile > .tile-body,
+.tile > .tile-ctrl,
+.tile > .kill { position: relative; z-index: 1; }
 .tile.is-met { border-color: var(--done); }
 .tile.is-met .tile-fill { background: var(--done-wash); }
 
@@ -437,7 +442,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 <main class="wrap">
   <!-- ============ PLACEMENT ============ -->
   <div class="page is-on" id="page-placement">
-    <p class="lede">Work down the check-in first, then whatever's carried over. <b id="placementLede"></b></p>
+    <p class="lede"><b id="placementLede"></b></p>
 
     <section>
       <div class="sec-head">
@@ -613,35 +618,82 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  /* ---------- content revisions ----------
+     The check-in lives in the store, so changing defaults() alone would only
+     reach a brand-new device. Anything below the current revision is edited
+     in place on load, keeping steps that were added by hand. */
+  var CONTENT_REV = 2;
+
+  function plain(t) { return String(t || '').replace(/[’']/g, "'").trim().toLowerCase(); }
+
+  function migrateContent(s) {
+    if ((s.rev || 0) >= CONTENT_REV) return false;
+
+    var retired = {
+      placement: ['check the activity list for today', "read yesterday's handover notes",
+        'set my top 3 priorities', 'check in with supervisor'],
+      university: ['check announcements', "check what's due this week",
+        '30 minutes of reading', "write up today's lecture notes"]
+    };
+    var wanted = {
+      placement: ['Check phone notes'],
+      university: ['Finish weekly notes before Thursday class',
+        'Update readings and put them into a podcast',
+        'Listen to weekly podcast content']
+    };
+
+    ['placement', 'university'].forEach(function (page) {
+      var items = (s.routines[page] || []).filter(function (i) {
+        return retired[page].indexOf(plain(i.text)) === -1;
+      });
+      items.forEach(function (i) {
+        if (plain(i.text) === 'log placement hours') i.text = 'Submit logbook';
+      });
+      wanted[page].forEach(function (text) {
+        var here = items.some(function (i) { return plain(i.text) === plain(text); });
+        if (!here) items.push({ id: uid(), text: text });
+      });
+      s.routines[page] = items;
+    });
+
+    (s.metrics || []).forEach(function (m) {
+      if (plain(m.name) === 'meditation' && m.kind === 'number') {
+        m.kind = 'check';
+        m.target = 1;
+        m.unit = '';
+      }
+    });
+
+    s.rev = CONTENT_REV;
+    return true;
+  }
+
   /* ---------- defaults on first run ---------- */
   function defaults() {
     return {
       routines: {
         placement: [
           { id: uid(), text: 'Check clinic emails' },
-          { id: uid(), text: 'Check the activity list for today' },
-          { id: uid(), text: 'Read yesterday’s handover notes' },
-          { id: uid(), text: 'Set my top 3 priorities' },
-          { id: uid(), text: 'Check in with supervisor' },
-          { id: uid(), text: 'Log placement hours' }
+          { id: uid(), text: 'Submit logbook' },
+          { id: uid(), text: 'Check phone notes' }
         ],
         university: [
-          { id: uid(), text: 'Check announcements' },
-          { id: uid(), text: 'Check what’s due this week' },
-          { id: uid(), text: '30 minutes of reading' },
-          { id: uid(), text: 'Write up today’s lecture notes' }
+          { id: uid(), text: 'Finish weekly notes before Thursday class' },
+          { id: uid(), text: 'Update readings and put them into a podcast' },
+          { id: uid(), text: 'Listen to weekly podcast content' }
         ]
       },
       metrics: [
         { id: uid(), name: 'Gym', mark: '🏋', kind: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Steps', mark: '👟', kind: 'number', target: 10000, unit: 'steps' },
         { id: uid(), name: 'Water', mark: '💧', kind: 'counter', target: 8, unit: 'glasses' },
-        { id: uid(), name: 'Meditation', mark: '🧘', kind: 'number', target: 10, unit: 'min' },
+        { id: uid(), name: 'Meditation', mark: '🧘', kind: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Sleep', mark: '☾', kind: 'number', target: 7, unit: 'hrs' }
       ],
       tasks: [],
       notes: [],
-      days: {}
+      days: {},
+      rev: CONTENT_REV
     };
   }
 
@@ -674,6 +726,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
     d.tasks = d.tasks || [];
     d.notes = d.notes || [];
     d.days = d.days || {};
+    migrateContent(d);
     return d;
   }
 
@@ -707,7 +760,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
     if (!db) return;
     try {
       if (scope === 'config') {
-        push(db.doc('app/config').set({ routines: state.routines, metrics: state.metrics }));
+        push(db.doc('app/config').set({
+          routines: state.routines, metrics: state.metrics, rev: state.rev || CONTENT_REV
+        }));
       } else if (scope === 'tasks') {
         push(db.doc('app/tasks').set({ tasks: state.tasks }));
       } else if (scope === 'day') {
@@ -1010,9 +1065,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
       var body = el('div', 'tile-body');
       body.appendChild(el('div', 'tile-name', m.name));
       var sub = el('div', 'tile-sub');
-      sub.appendChild(el('span', null, m.kind === 'check'
-        ? 'every day'
-        : 'target ' + m.target + (m.unit ? ' ' + m.unit : '')));
+      if (m.kind !== 'check') {
+        sub.appendChild(el('span', null, 'target ' + m.target + (m.unit ? ' ' + m.unit : '')));
+      }
       var s = streak(m);
       if (s > 1) sub.appendChild(el('span', 'streak', s + '-day streak'));
       body.appendChild(sub);
@@ -1446,6 +1501,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
         var c = config.data();
         if (c.routines) state.routines = c.routines;
         if (c.metrics) state.metrics = c.metrics;
+        state.rev = c.rev || 0;
+        if (migrateContent(state)) save('config');
       } else {
         // first run on this artifact: keep whatever is on this device
         save('config');

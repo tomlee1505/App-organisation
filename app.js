@@ -43,24 +43,20 @@
       routines: {
         placement: [
           { id: uid(), text: 'Check clinic emails' },
-          { id: uid(), text: 'Check the activity / appointment list for today' },
-          { id: uid(), text: 'Read handover notes from yesterday' },
-          { id: uid(), text: 'Set my top 3 priorities for the day' },
-          { id: uid(), text: 'Check in with supervisor' },
-          { id: uid(), text: 'Log placement hours' }
+          { id: uid(), text: 'Submit logbook' },
+          { id: uid(), text: 'Check phone notes' }
         ],
         university: [
-          { id: uid(), text: 'Check LMS / announcements' },
-          { id: uid(), text: 'Check upcoming deadlines' },
-          { id: uid(), text: '30 minutes of reading' },
-          { id: uid(), text: 'Write up today’s lecture notes' }
+          { id: uid(), text: 'Finish weekly notes before Thursday class' },
+          { id: uid(), text: 'Update readings and put them into a podcast' },
+          { id: uid(), text: 'Listen to weekly podcast content' }
         ]
       },
       metrics: [
         { id: uid(), name: 'Gym', icon: '🏋️', type: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Steps', icon: '👟', type: 'number', target: 10000, unit: 'steps' },
         { id: uid(), name: 'Water', icon: '💧', type: 'counter', target: 8, unit: 'glasses' },
-        { id: uid(), name: 'Meditation', icon: '🧘', type: 'number', target: 10, unit: 'min' },
+        { id: uid(), name: 'Meditation', icon: '🧘', type: 'check', target: 1, unit: '' },
         { id: uid(), name: 'Sleep', icon: '😴', type: 'number', target: 7, unit: 'hrs' }
       ],
       tasks: [],
@@ -449,9 +445,9 @@
       var s = streak(m);
       var sub = el('div', 'metric-target');
       sub.textContent = m.type === 'check'
-        ? 'Every day'
+        ? ''
         : 'Target ' + m.target + (m.unit ? ' ' + m.unit : '');
-      body.appendChild(sub);
+      if (sub.textContent) body.appendChild(sub);
       if (s > 1) {
         var st = el('div', 'metric-streak', '🔥 ' + s + ' day streak');
         body.appendChild(st);
